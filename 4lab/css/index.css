@@ -1,0 +1,144 @@
+@import url("./reset.css");
+
+:root {
+    --background-color: rgb(236, 236, 236);
+    --backgrounds-color-left: rgb(199, 199, 199);
+    --background-color-form: rgb(199, 199, 199);
+    --text-color: black;
+}
+
+[data-theme="dark"] {   
+    --background-color: #333;
+    --backgrounds-color-left: rgb(96, 96, 96);
+    --background-color-form: rgb(118, 118, 118);
+    --text-color: rgb(205, 205, 205);
+}
+
+#theme-turn {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+}
+
+#theme-icon {
+    position: absolute;
+    right: 22%;
+    top: 23%;
+    height: 20px;
+    width: 20px;
+}
+
+main {
+    display: flex;
+}
+
+.left-side {
+    display: inline-block;
+    padding: 0 20px 0 20px;
+    width: 15%;
+    background-color: var(--backgrounds-color-left);
+    height: 100%; 
+}
+
+.main_content {   
+    display: inline-block;
+    text-align: left;
+    background-color: var(--background-color);
+    width: 85%; 
+    height: 100%; 
+}
+
+p, .text_header .text_header_general{
+    color: var(--text-color);
+    padding: 2%;
+}
+
+.text_header_general {
+    padding: 5%;
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+p {
+    font-size: 20px;
+}
+
+.text_header {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.ad_card {
+    padding-top: 50px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ad_card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.ad_card p {
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.review-section {
+    background-color: var(--background-color);
+    padding: 30px 0; 
+}
+
+.review-form input, .review-form textarea, .review-form button {
+    display: block;
+    margin-bottom: 10px;
+    width: 100%;
+    padding: 10px;
+}
+
+.review-form button {
+    width: 150px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+#review-container {
+    min-height: 200px;  
+    padding: 20px;
+    background-color: #f4f4f4;  /* Цвет фона */
+    border-radius: 10px;
+    transition: height 0.3s ease;
+}
+
+.review {
+    background-color: var(--background-color-form);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.review img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    display: block;
+    margin-top: 10px;
+}
+
+.review p {
+    color: var(--text-color);
+}
+
