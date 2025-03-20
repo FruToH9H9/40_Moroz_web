@@ -1,0 +1,52 @@
+@import url("./reset.css");
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+#content {
+    padding: 20px;
+}
+
+.block {
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.edit-mode {
+    border: 2px dashed #333;
+}
+
+button {
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+img {
+    max-width: 400px;
+    height: auto;
+    border-radius: 5px;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
