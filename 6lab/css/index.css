@@ -1,0 +1,73 @@
+@import url("./reset.css");
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url("https://textur.gas-kvas.com/uploads/posts/2024-10/textur-gas-kvas-com-7dkf-p-teksturi-pikselnaya-podzemelya-1.jpg");
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+main, .skills {
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+}
+
+#left-side, #skills-side {
+    flex: 1;
+    width: calc(100%/3);
+    padding: 1%;
+}
+
+.skills-ico {
+    flex: 1;
+    padding: 1%;
+    object-fit: contain;
+    padding-left: 15px;
+    height: 80px;
+}
+
+.skills-ico:hover {
+    transform: scale(1.1);
+}
+
+
+.block {
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.edit-mode {
+    border: 2px dashed #333;
+}
+
+button {
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+img {
+    max-width: calc(100vh - 70vh);
+    height: auto;
+    border-radius: 5px;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
