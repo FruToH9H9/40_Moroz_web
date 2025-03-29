@@ -81,6 +81,23 @@ let blocks = [...built_in_blocks];
 
 let skillInfo = [...built_in_skills];
 
+function renderSkill(index) {
+    const descriptionElement = document.getElementById('skill-info');
+    descriptionElement.innerHTML = '';
+    if (skillInfo[index]) {
+        const paramsList = document.createElement('ul');
+        paramsList.className = 'skill-params';
+        skillInfo[index].forEach(param => {
+            const paramItem = document.createElement('li');
+            paramItem.textContent = param;
+            paramsList.appendChild(paramItem);
+        });
+        descriptionElement.innerHTML = skillInfo[index].join('<br>');
+    } else {
+        descriptionElement.textContent = "Информация о навыке отсутствует";
+    }
+}
+
 function isValidUrl(to_test) {
     let url;
   
@@ -100,22 +117,30 @@ function delete_mode(blockElement, index) {
     blockElement.appendChild(deleteButton);
 }
 
-function renderSkill(index) {
-    const descriptionElement = document.getElementById('skill-info');
-    descriptionElement.innerHTML = '';
-    if (skillInfo[index]) {
-        const paramsList = document.createElement('ul');
-        paramsList.className = 'skill-params';
-        skillInfo[index].forEach(param => {
-            const paramItem = document.createElement('li');
-            paramItem.textContent = param;
-            paramsList.appendChild(paramItem);
-        });
-        descriptionElement.innerHTML = skillInfo[index].join('<br>');
-    } else {
-        descriptionElement.textContent = "Информация о навыке отсутствует";
-    }
+function renderPage() {
+    const content = document.getElementById('left-side');
+    const content_skills = document.getElementById('skills-side');
+    content_skills.innerHTML = '';
+    content.innerHTML = '';
+
+    blocks.forEach((block, index) => {
+        const blockElement = document.createElement('div');
+        blockElement.innerHTML = block.getHTML();
+
+        if (block instanceof SkillsBlock) {
+            if (content.classList.contains('edit-mode')) {
+                delete_mode(blockElement, index);
+            }
+            content_skills.appendChild(blockElement);
+        } else {
+            if (content.classList.contains('edit-mode')) {
+                delete_mode(blockElement, index);
+            }
+            content.appendChild(blockElement);
+        }
+    });
 }
+
 
 function renderPage() {
     const content = document.getElementById('left-side');
@@ -159,14 +184,15 @@ function toggleEditMode() {
     const content = document.getElementById('content');
     const isEditMode = content.classList.toggle('edit-mode');
 
-    if (!isEditMode) {
-        renderPage();
-        return;
-    }
+    renderPage();
 
-    const blocksElements = content.querySelectorAll('.block');
+    if (!isEditMode) return;
+
+    const blocksElements = document.querySelectorAll('.block');
     blocksElements.forEach((blockElement, index) => {
-        if (content.classList.contains('edit-mode')) {
+        const block = blocks[index];
+
+        if (block instanceof TextBlock || block instanceof BioBlock) {
             const textElement = blockElement.querySelector('p');
             if (textElement) {
                 textElement.setAttribute('contenteditable', 'true');
@@ -175,72 +201,52 @@ function toggleEditMode() {
                     saveToLocalStorage();
                 });
             }
+        }
 
-            const imageElement = blockElement.querySelector('#avatar');
-            if (imageElement) {
-                editButton(blocks, index, blockElement);
-            }
+        if (block instanceof ImageBlock) {
+            editButton(blocks, index, blockElement);
+        }
 
-            const profileElement = blockElement.querySelector('a');
-            if (profileElement) {
-                editButton(blocks, index, blockElement);
-            }
-
-            const listItems = blockElement.querySelectorAll('li');
-            if (listItems.length > 0) {
-                listItems.forEach((li, skillIndex) => {
-                    li.setAttribute('contenteditable', 'true');
-                    li.addEventListener('blur', () => {
-                        blocks[index].data[skillIndex] = li.innerText;
-                        saveToLocalStorage();
-                    });
-                });
-            }
-
-            const skillDesc = document.getElementById('skill-info');
-            if (skillDesc) {
-                skillDesc.setAttribute('contenteditable', 'true');
-                skillDesc.addEventListener('blur', () => {
-                    const skillsBlockIndex = blocks.findIndex(b => b.type === 'SkillsBlock');
-                    if (skillsBlockIndex !== -1) {
-                        const params = skillDesc.innerText.split('\n')
-                            .map(p => p.trim())
-                            .filter(p => p !== '');
-                        skillInfo[skillsBlockIndex] = params;
+        if (block instanceof SkillsBlock) {
+            const skillsImages = blockElement.querySelectorAll('.skills-ico');
+            skillsImages.forEach((img, skillIndex) => {
+                img.addEventListener('click', () => {
+                    const newSkillText = prompt("Введите новое описание навыка:");
+                    if (newSkillText) {
+                        skillInfo[skillIndex][0] = newSkillText;
                         saveToLocalStorage();
                         renderPage();
                     }
                 });
-            }
-
-            const deleteButton = document.createElement('button');
-            deleteButton.innerText = 'Удалить';
-            deleteButton.addEventListener('click', () => removeBlock(index));
-            blockElement.appendChild(deleteButton);
-        } else {
-            const textElement = blockElement.querySelector('p');
-            if (textElement) {
-                textElement.setAttribute('contenteditable', 'false');
-            }
+            });
         }
+
+        delete_mode(blockElement, index);
     });
 }
 
+
 function removeBlock(index) {
+    if (blocks[index] instanceof SkillsBlock) {
+        skillInfo.splice(index, 1); 
+    }
     blocks.splice(index, 1);
     renderPage();
     saveToLocalStorage();
 }
+
 
 function saveToLocalStorage() {
     localStorage.setItem('blocks', JSON.stringify(blocks.map(block => ({
         type: block.constructor.name,
         data: block.data
     })))); 
+    localStorage.setItem('skillInfo', JSON.stringify(skillInfo));
 }
 
 function loadFromLocalStorage() {
     const savedBlocks = localStorage.getItem('blocks');
+    const savedSkills = localStorage.getItem('skillInfo');
     if (savedBlocks) {
         blocks = JSON.parse(savedBlocks).map(blockData => {
             switch (blockData.type) {
@@ -258,13 +264,17 @@ function loadFromLocalStorage() {
         }).filter(block => block !== null);
     }
     else {
-        blocks = [...built_in_blocks] //если дуралей все удалил, то подгружаем заводские настройки
+        reset() //если дуралей все удалил, то подгружаем заводские настройки
+    }
+    if (savedSkills) {
+        skillInfo = JSON.parse(savedSkills); 
     }
 }
 
 function reset() {
-    if (!content.classList.contains('edit-mode') || !content_skills.classList.contains('edit-mode')) {
-        blocks = [...built_in_blocks]; 
+    if (!content.classList.contains('edit-mode')) {
+        blocks = [...built_in_blocks];
+        skillInfo = [...built_in_skills] 
         renderPage(); 
         saveToLocalStorage(); 
         alert("Данные сброшены до начальных характеристик!");
@@ -293,7 +303,7 @@ function returnButton() {
 function backToProfile() {
     document.getElementById("left-side").style.display = "block";
     document.getElementById("skills-side").style.display = "block";
-    document.getElementById("content").style.display = "none"; // Hide the API content container
+    document.getElementById("content").style.display = "none"; 
     const returnButton = document.querySelector('.return-button');
     if (returnButton) {
         returnButton.remove();
