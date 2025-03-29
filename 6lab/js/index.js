@@ -287,122 +287,245 @@ function reset() {
 
 
 //6 лаба POST PUT GET
-let returnButtonCreated = false; 
-function returnButton() {
-    if (returnButtonCreated) return;
-    const nav = document.querySelector('nav'); 
-    if (!nav) return;
-    const returnButton = document.createElement('button');
-    returnButton.innerText = 'Вернуться к карточке';
-    returnButton.classList.add('return-button'); 
-    returnButton.addEventListener('click', backToProfile); 
-    nav.appendChild(returnButton); 
-    returnButtonCreated = true; 
-}
-
-function backToProfile() {
-    document.getElementById("left-side").style.display = "block";
-    document.getElementById("skills-side").style.display = "block";
-    document.getElementById("content").style.display = "none"; 
-    const returnButton = document.querySelector('.return-button');
-    if (returnButton) {
-        returnButton.remove();
-        returnButtonCreated = false;
-    }
-    renderPage();
-}
-
+//news
 async function fetchNews() {
     try {
+        const content = document.getElementById("content");
+        content.innerHTML = `<div class="block">Загрузка новостей...</div>`;
+        
+        const cacheKey = 'cachedNews';
+        const cachedData = localStorage.getItem(cacheKey);
+        const cacheExpiry = localStorage.getItem(`${cacheKey}_expiry`);
+        
+        if (cachedData && cacheExpiry && Date.now() < parseInt(cacheExpiry)) {
+            displayNews(JSON.parse(cachedData));
+            returnButton();
+            return;
+        }
+        
         const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=3");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
         const news = await response.json();
+        
+        localStorage.setItem(cacheKey, JSON.stringify(news));
+        localStorage.setItem(`${cacheKey}_expiry`, Date.now() + 300000);
+        
         displayNews(news);
         returnButton();
+        
     } catch (error) {
-        alert("Ошибка загрузки новостей");
-    }
-}
-
-async function fetchProfile() {
-    try {
-        const response = await fetch("https://jsonplaceholder.typicode.com/users/1");
-        const profile = await response.json();
-        displayProfile(profile);
-        returnButton();
-    } catch (error) {
-        alert("Ошибка загрузки профиля");
+        console.error("News fetch error:", error);
+        showNotification(`Ошибка загрузки новостей: ${error.message}`, 'error');
+        
+        const cachedNews = localStorage.getItem('cachedNews');
+        if (cachedNews) {
+            displayNews(JSON.parse(cachedNews));
+            showNotification("Показаны кэшированные новости", 'warning');
+        } else {
+            document.getElementById("content").innerHTML = `
+                <div class="block">
+                    <h3>Новости</h3>
+                    <p>Не удалось загрузить новости. Пожалуйста, попробуйте позже.</p>
+                    <button onclick="fetchNews()">Попробовать снова</button>
+                </div>
+            `;
+        }
     }
 }
 
 function displayNews(news) {
     const content = document.getElementById("content");
-    document.getElementById("left-side").style.display = "none";
-    document.getElementById("skills-side").style.display = "none";
-    content.style.display = "block";
-    
-    content.innerHTML = news.map(post => `
-        <div class="block" style="height:200px; object-fit: contain;">
-            <h3>${post.title}</h3>
-            <p>${post.body}</p>
-        </div>
-    `).join("");
-}
-
-function displayProfile(profile) {
-    const content = document.getElementById("content");
-    document.getElementById("left-side").style.display = "none";
-    document.getElementById("skills-side").style.display = "none";
-    content.style.display = "block";
+    hideMainContent();
     
     content.innerHTML = `
         <div class="block">
-            <h3>Имя: ${profile.name}</h3>
-            <p>Email: ${profile.email}</p>
-            <button onclick="updateProfile()">Обновить имя</button>
+            <h2>Последние новости</h2>
+            <div class="news-container">
+                ${news.map(post => `
+                    <article class="news-card">
+                        <h3>${post.title}</h3>
+                        <p>${post.body}</p>
+                        <small>ID: ${post.id}</small>
+                    </article>
+                `).join('')}
+            </div>
+            <button class="refresh-btn" onclick="fetchNews()">Обновить новости</button>
         </div>
     `;
 }
 
-async function updateProfile() {
-    const newName = prompt("Введите новое имя:");
-    if (!newName) return;
+//profile
+async function fetchProfile() {
     try {
-        await fetch("https://jsonplaceholder.typicode.com/users/1", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: newName })
-        });
-        alert("Имя обновлено!");
+        showLoading("content", "Загрузка профиля...");
+        
+        const response = await fetch("https://jsonplaceholder.typicode.com/users/1");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const profile = await response.json();
+        displayProfile(profile);
+        returnButton();
+        
     } catch (error) {
-        alert("Ошибка обновления профиля");
+        console.error("Profile fetch error:", error);
+        showNotification(`Ошибка загрузки профиля: ${error.message}`, 'error');
+        
+        document.getElementById("content").innerHTML = `
+            <div class="block">
+                <h3>Профиль</h3>
+                <p>Не удалось загрузить профиль.</p>
+                <button onclick="fetchProfile()">Попробовать снова</button>
+            </div>
+        `;
     }
 }
 
+async function updateProfile() {
+    const profile = await (await fetch("https://jsonplaceholder.typicode.com/users/1")).json();
+    
+    const newName = prompt("Введите новое имя:", profile.name);
+    if (newName === null) return;
+    
+    if (!newName.trim()) {
+        showNotification("Имя не может быть пустым!", 'error');
+        return;
+    }
+
+    try {
+        showLoading("content", "Обновление профиля...");
+        
+        const response = await fetch("https://jsonplaceholder.typicode.com/users/1", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const updatedProfile = await response.json();
+        displayProfile(updatedProfile);
+        showNotification("Профиль успешно обновлен!", 'success');
+        
+    } catch (error) {
+        console.error("Update error:", error);
+        showNotification(`Ошибка обновления: ${error.message}`, 'error');
+        fetchProfile();
+    }
+}
+
+function displayProfile(profile) {
+    const content = document.getElementById("content");
+    hideMainContent();
+    
+    content.innerHTML = `
+        <div class="block profile-card">
+            <div class="profile-header">
+                <h2>${profile.name}</h2>
+                <span class="username">@${profile.username}</span>
+            </div>
+            
+            <div class="profile-details">
+                <p><strong>📧 Email:</strong> ${profile.email}</p>
+                <p><strong>📞 Телефон:</strong> ${profile.phone}</p>
+                <p><strong>🏠 Адрес:</strong> ${profile.address.city}, ${profile.address.street}</p>
+                <p><strong>💼 Компания:</strong> ${profile.company.name}</p>
+                <p><strong>🌐 Сайт:</strong> <a href="http://${profile.website}" target="_blank">${profile.website}</a></p>
+            </div>
+            
+            <div class="profile-actions">
+                <button onclick="updateProfile()">✏️ Редактировать</button>
+                <button onclick="fetchFriends()">👥 Посмотреть друзей</button>
+            </div>
+        </div>
+    `;
+}
+
+//friends
 async function fetchFriends() {
     try {
+        showLoading("content", "Загрузка друзей...");
+        
         const response = await fetch("https://jsonplaceholder.typicode.com/users");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
         const friends = await response.json();
-        friends = users.slice(0, 3);
-        displayFriends(friends);
+        displayFriends(friends.slice(0, 3));
         returnButton();
+        
     } catch (error) {
-        alert("Ошибка загрузки списка друзей");
+        console.error("Friends fetch error:", error);
+        showNotification(`Ошибка загрузки друзей: ${error.message}`, 'error');
+        
+        document.getElementById("content").innerHTML = `
+            <div class="block">
+                <h3>Друзья</h3>
+                <p>Не удалось загрузить список друзей.</p>
+                <button onclick="fetchFriends()">Попробовать снова</button>
+            </div>
+        `;
     }
 }
 
 function displayFriends(friends) {
     const content = document.getElementById("content");
-    if (friends.length === 0) {
-        content.innerHTML = `<p>У вас нет друзей.</p>`;
-    } else {
+    hideMainContent();
+    
+    if (!friends || friends.length === 0) {
         content.innerHTML = `
-            <h3>Список друзей:</h3>
-            <ul>
-                ${friends.map(friend => `<li>${friend.name}</li>`).join("")}
-            </ul>
+            <div class="block">
+                <h3>Друзья</h3>
+                <p>Список друзей пуст.</p>
+            </div>
         `;
+        return;
     }
+    
+    content.innerHTML = `
+        <div class="block">
+            <h2>Мои друзья</h2>
+            <div class="friends-grid">
+                ${friends.map(friend => `
+                    <div class="friend-card">
+                        <h3>${friend.name}</h3>
+                        <p>📧 ${friend.email}</p>
+                        <p>🏙 ${friend.address.city}</p>
+                        <button onclick="viewFriend(${friend.id})">👀 Профиль</button>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }
+
+function viewFriend(id) {
+    alert(`Здесь будет подробный профиль друга с ID ${id}`);
+}
+
+function hideMainContent() {
+    document.getElementById("left-side").style.display = "none";
+    document.getElementById("skills-side").style.display = "none";
+    document.getElementById("content").style.display = "block";
+}
+
+function showLoading(elementId, message = "Загрузка...") {
+    document.getElementById(elementId).innerHTML = `
+        <div class="block loading">
+            <div class="spinner"></div>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 5000);
+}
+
 
 document.getElementById('edit-mode-toggle').addEventListener('click', toggleEditMode);
 document.getElementById('reset').addEventListener('click', reset)
