@@ -287,25 +287,40 @@ function reset() {
 
 
 //6 лаба POST PUT GET
-//news
+function hideMainContent() {
+    document.getElementById("left-side").style.display = "none";
+    document.getElementById("skills-side").style.display = "none";
+    document.getElementById("content").style.display = "block";
+}
+
+function showMainContent() {
+    document.getElementById("left-side").style.display = "block";
+    document.getElementById("skills-side").style.display = "block";
+    document.getElementById("content").style.display = "none";
+}
+
 async function fetchNews() {
     try {
         const content = document.getElementById("content");
         content.innerHTML = `<div class="block">Загрузка новостей...</div>`;
-        
+
         const cacheKey = 'cachedNews';
         const cachedData = localStorage.getItem(cacheKey);
         const cacheExpiry = localStorage.getItem(`${cacheKey}_expiry`);
-        
+
         if (cachedData && cacheExpiry && Date.now() < parseInt(cacheExpiry)) {
             displayNews(JSON.parse(cachedData));
             return;
         }
+
+        const API_KEY = "2652e88261e5eae8155512c7b5a58df9"; 
+        const url = `https://gnews.io/api/v4/top-headlines?lang=en&country=us&max=3&apikey=${API_KEY}`;
         
-        const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=3");
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
-        const news = await response.json();
+        const data = await response.json();
+        const news = data.articles;
         
         localStorage.setItem(cacheKey, JSON.stringify(news));
         localStorage.setItem(`${cacheKey}_expiry`, Date.now() + 300000);
@@ -314,21 +329,140 @@ async function fetchNews() {
         
     } catch (error) {
         console.error("News fetch error:", error);
-        showNotification(`Ошибка загрузки новостей: ${error.message}`, 'error');
         
-        const cachedNews = localStorage.getItem('cachedNews');
-        if (cachedNews) {
-            displayNews(JSON.parse(cachedNews));
-            showNotification("Показаны кэшированные новости", 'warning');
-        } else {
-            document.getElementById("content").innerHTML = `
-                <div class="block">
-                    <h3>Новости</h3>
-                    <p>Не удалось загрузить новости. Пожалуйста, попробуйте позже.</p>
-                    <button onclick="fetchNews()">Попробовать снова</button>
-                </div>
-            `;
-        }
+        const fallbackNews = [
+            {
+                title: "Новости не загрузились",
+                description: "Используются тестовые данные",
+                url: "#",
+                publishedAt: new Date().toISOString()
+            },
+            {
+                title: "Попробуйте позже",
+                description: "Сервер новостей временно недоступен",
+                url: "#",
+                publishedAt: new Date().toISOString()
+            }
+        ];
+        displayNews(fallbackNews);
+        showNotification("Используются тестовые данные", 'warning');
+    }
+}
+
+async function fetchProfile() {
+    try {
+        const response = await fetch("https://randomuser.me/api/");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        const profile = data.results[0];
+        displayProfile(profile);
+        
+    } catch (error) {
+        console.error("Profile fetch error:", error);
+        const fallbackProfile = {
+            name: { first: "Гном", last: "Гимли" },
+            email: "gimli@erebor.com",
+            phone: "+1 234 567 890",
+            location: { city: "Эребор", street: { name: "Тайная улица", number: 42 } },
+            login: { username: "gimli_son_of_gloin" },
+            picture: { large: "https://randomuser.me/api/portraits/men/75.jpg" }
+        };
+        displayProfile(fallbackProfile);
+    }
+}
+
+function viewFriend(username) {
+    const content = document.getElementById("content");
+    hideMainContent();
+    
+    const friend = skillInfo.find(friend => friend[0] === username);
+    
+    if (!friend) {
+        content.innerHTML = `<div class="block">Профиль не найден</div>`;
+        return;
+    }
+    
+    content.innerHTML = `
+        <div class="block profile-card">
+            <div class="profile-header">
+                <img src="https://randomuser.me/api/portraits/men/3.jpg" alt="Аватар" class="profile-avatar">
+                <h2>${friend[0]}</h2>
+                <span class="username">@${username}</span>
+            </div>
+            <div class="profile-details">
+                <p><strong>📧 Email:</strong> example@example.com</p>
+                <p><strong>📞 Телефон:</strong> +123456789</p>
+                <p><strong>🏠 Город:</strong> Город Друзей</p>
+            </div>
+            <div class="profile-actions">
+                <button onclick="fetchFriends()">👥 Назад к друзьям</button>
+            </div>
+        </div>
+    `;
+}
+
+function updateProfile() {
+    const content = document.getElementById("content");
+    const name = prompt("Введите новое имя:", "Гном Гимли");
+    const email = prompt("Введите новый email:", "gimli@erebor.com");
+    const phone = prompt("Введите новый телефон:", "+1 234 567 890");
+    const city = prompt("Введите новый город:", "Эребор");
+    
+    if (!name || !email || !phone || !city) {
+        alert("Все поля должны быть заполнены!");
+        return;
+    }
+    
+    content.innerHTML = `
+        <div class="block profile-card">
+            <div class="profile-header">
+                <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Аватар" class="profile-avatar">
+                <h2>${name}</h2>
+                <span class="username">@gimli_son_of_gloin</span>
+            </div>
+            <div class="profile-details">
+                <p><strong>📧 Email:</strong> ${email}</p>
+                <p><strong>📞 Телефон:</strong> ${phone}</p>
+                <p><strong>🏠 Город:</strong> ${city}</p>
+            </div>
+            <div class="profile-actions">
+                <button onclick="fetchFriends()">👥 Назад к друзьям</button>
+            </div>
+        </div>
+    `;
+    showNotification("Профиль обновлен", 'success');
+}
+
+
+
+async function fetchFriends() {
+    try {
+        const response = await fetch("https://randomuser.me/api/?results=3");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        displayFriends(data.results);
+        
+    } catch (error) {
+        console.error("Friends fetch error:", error);
+        const fallbackFriends = [
+            {
+                name: { first: "Леголас", last: "Зеленолист" },
+                email: "legolas@mirkwood.com",
+                location: { city: "Лихолесье" },
+                login: { username: "elf_archer" },
+                picture: { medium: "https://randomuser.me/api/portraits/men/1.jpg" }
+            },
+            {
+                name: { first: "Арагорн", last: "Элессар" },
+                email: "aragorn@gondor.com",
+                location: { city: "Минас Тирит" },
+                login: { username: "strider" },
+                picture: { medium: "https://randomuser.me/api/portraits/men/2.jpg" }
+            }
+        ];
+        displayFriends(fallbackFriends);
     }
 }
 
@@ -340,75 +474,18 @@ function displayNews(news) {
         <div class="block">
             <h2>Последние новости</h2>
             <div class="news-container">
-                ${news.map(post => `
+                ${news.map((post, index) => `
                     <article class="news-card">
-                        <h3>${post.title}</h3>
-                        <p>${post.body}</p>
-                        <small>ID: ${post.id}</small>
+                        <h3>${post.title || `Новость ${index + 1}`}</h3>
+                        <p>${post.description || "Описание отсутствует"}</p>
+                        ${post.url ? `<a href="${post.url}" target="_blank">Читать далее</a>` : ''}
+                        <small>${new Date(post.publishedAt || new Date()).toLocaleDateString()}</small>
                     </article>
                 `).join('')}
             </div>
             <button class="refresh-btn" onclick="fetchNews()">Обновить новости</button>
         </div>
     `;
-}
-
-//profile
-async function fetchProfile() {
-    try {
-        showLoading("content", "Загрузка профиля...");
-        
-        const response = await fetch("https://jsonplaceholder.typicode.com/users/1");
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const profile = await response.json();
-        displayProfile(profile);
-        
-    } catch (error) {
-        console.error("Profile fetch error:", error);
-        showNotification(`Ошибка загрузки профиля: ${error.message}`, 'error');
-        
-        document.getElementById("content").innerHTML = `
-            <div class="block">
-                <h3>Профиль</h3>
-                <p>Не удалось загрузить профиль.</p>
-                <button onclick="fetchProfile()">Попробовать снова</button>
-            </div>
-        `;
-    }
-}
-
-async function updateProfile() {
-    const profile = await (await fetch("https://jsonplaceholder.typicode.com/users/1")).json();
-    
-    const newName = prompt("Введите новое имя:", profile.name);
-    if (newName === null) return;
-    
-    if (!newName.trim()) {
-        showNotification("Имя не может быть пустым!", 'error');
-        return;
-    }
-
-    try {
-        showLoading("content", "Обновление профиля...");
-        
-        const response = await fetch("https://jsonplaceholder.typicode.com/users/1", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: newName })
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const updatedProfile = await response.json();
-        displayProfile(updatedProfile);
-        showNotification("Профиль успешно обновлен!", 'success');
-        
-    } catch (error) {
-        console.error("Update error:", error);
-        showNotification(`Ошибка обновления: ${error.message}`, 'error');
-        fetchProfile();
-    }
 }
 
 function displayProfile(profile) {
@@ -418,16 +495,16 @@ function displayProfile(profile) {
     content.innerHTML = `
         <div class="block profile-card">
             <div class="profile-header">
-                <h2>${profile.name}</h2>
-                <span class="username">@${profile.username}</span>
+                <img src="${profile.picture?.large || 'https://via.placeholder.com/150'}" alt="Аватар" class="profile-avatar">
+                <h2>${profile.name?.first || 'Имя'} ${profile.name?.last || 'Фамилия'}</h2>
+                <span class="username">@${profile.login?.username || 'username'}</span>
             </div>
             
             <div class="profile-details">
-                <p><strong>📧 Email:</strong> ${profile.email}</p>
-                <p><strong>📞 Телефон:</strong> ${profile.phone}</p>
-                <p><strong>🏠 Адрес:</strong> ${profile.address.city}, ${profile.address.street}</p>
-                <p><strong>💼 Компания:</strong> ${profile.company.name}</p>
-                <p><strong>🌐 Сайт:</strong> <a href="http://${profile.website}" target="_blank">${profile.website}</a></p>
+                <p><strong>📧 Email:</strong> ${profile.email || 'Не указан'}</p>
+                <p><strong>📞 Телефон:</strong> ${profile.phone || 'Не указан'}</p>
+                <p><strong>🏠 Адрес:</strong> ${profile.location?.city || 'Город'}, ${profile.location?.street?.name || 'Улица'} ${profile.location?.street?.number || ''}</p>
+                <p><strong>🌐 Сайт:</strong> <a href="#" target="_blank">${profile.email?.split('@')[1] || 'example.com'}</a></p>
             </div>
             
             <div class="profile-actions">
@@ -438,44 +515,9 @@ function displayProfile(profile) {
     `;
 }
 
-//friends
-async function fetchFriends() {
-    try {
-        showLoading("content", "Загрузка друзей...");
-        
-        const response = await fetch("https://jsonplaceholder.typicode.com/users");
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const friends = await response.json();
-        displayFriends(friends.slice(0, 3));
-        
-    } catch (error) {
-        console.error("Friends fetch error:", error);
-        showNotification(`Ошибка загрузки друзей: ${error.message}`, 'error');
-        
-        document.getElementById("content").innerHTML = `
-            <div class="block">
-                <h3>Друзья</h3>
-                <p>Не удалось загрузить список друзей.</p>
-                <button onclick="fetchFriends()">Попробовать снова</button>
-            </div>
-        `;
-    }
-}
-
 function displayFriends(friends) {
     const content = document.getElementById("content");
     hideMainContent();
-    
-    if (!friends || friends.length === 0) {
-        content.innerHTML = `
-            <div class="block">
-                <h3>Друзья</h3>
-                <p>Список друзей пуст.</p>
-            </div>
-        `;
-        return;
-    }
     
     content.innerHTML = `
         <div class="block">
@@ -483,32 +525,14 @@ function displayFriends(friends) {
             <div class="friends-grid">
                 ${friends.map(friend => `
                     <div class="friend-card">
-                        <h3>${friend.name}</h3>
-                        <p>📧 ${friend.email}</p>
-                        <p>🏙 ${friend.address.city}</p>
-                        <button onclick="viewFriend(${friend.id})">👀 Профиль</button>
+                        <img src="${friend.picture?.medium || 'https://via.placeholder.com/100'}" alt="Аватар">
+                        <h3>${friend.name?.first || 'Имя'} ${friend.name?.last || 'Фамилия'}</h3>
+                        <p>📧 ${friend.email || 'Не указан'}</p>
+                        <p>🏙 ${friend.location?.city || 'Город'}</p>
+                        <button onclick="viewFriend('${friend.login?.username || 'id'}')">👀 Профиль</button>
                     </div>
                 `).join('')}
             </div>
-        </div>
-    `;
-}
-
-function viewFriend(id) {
-    alert(`Типо профиль гнома с ID ${id}`);
-}
-
-function hideMainContent() {
-    document.getElementById("left-side").style.display = "none";
-    document.getElementById("skills-side").style.display = "none";
-    document.getElementById("content").style.display = "block";
-}
-
-function showLoading(elementId, message = "Загрузка...") {
-    document.getElementById(elementId).innerHTML = `
-        <div class="block loading">
-            <div class="spinner"></div>
-            <p>${message}</p>
         </div>
     `;
 }
