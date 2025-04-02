@@ -299,7 +299,6 @@ async function fetchNews() {
         
         if (cachedData && cacheExpiry && Date.now() < parseInt(cacheExpiry)) {
             displayNews(JSON.parse(cachedData));
-            returnButton();
             return;
         }
         
@@ -312,7 +311,6 @@ async function fetchNews() {
         localStorage.setItem(`${cacheKey}_expiry`, Date.now() + 300000);
         
         displayNews(news);
-        returnButton();
         
     } catch (error) {
         console.error("News fetch error:", error);
@@ -365,7 +363,6 @@ async function fetchProfile() {
         
         const profile = await response.json();
         displayProfile(profile);
-        returnButton();
         
     } catch (error) {
         console.error("Profile fetch error:", error);
@@ -451,7 +448,6 @@ async function fetchFriends() {
         
         const friends = await response.json();
         displayFriends(friends.slice(0, 3));
-        returnButton();
         
     } catch (error) {
         console.error("Friends fetch error:", error);
@@ -499,7 +495,7 @@ function displayFriends(friends) {
 }
 
 function viewFriend(id) {
-    alert(`Здесь будет подробный профиль друга с ID ${id}`);
+    alert(`Типо профиль гнома с ID ${id}`);
 }
 
 function hideMainContent() {
